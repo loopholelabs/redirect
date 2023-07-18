@@ -28,15 +28,15 @@ type Options struct {
 	ListenAddress string
 }
 
-type Server struct {
+type Redirect struct {
 	server  *fasthttp.Server
 	logger  *zerolog.Logger
 	options *Options
 }
 
-func New(options *Options, logger *zerolog.Logger) *Server {
-	l := logger.With().Str(options.LogName, "Redirect").Logger()
-	return &Server{
+func New(options *Options, logger *zerolog.Logger) *Redirect {
+	l := logger.With().Str(options.LogName, "REDIRECT").Logger()
+	return &Redirect{
 		server: &fasthttp.Server{
 			Handler: func(ctx *fasthttp.RequestCtx) {
 				ctx.URI().SetScheme("https")
@@ -55,7 +55,7 @@ func New(options *Options, logger *zerolog.Logger) *Server {
 	}
 }
 
-func (s *Server) Start() error {
+func (s *Redirect) Start() error {
 	listenConfig := tcplisten.Config{
 		DeferAccept: true,
 		FastOpen:    true,
@@ -69,6 +69,6 @@ func (s *Server) Start() error {
 	return s.server.Serve(l)
 }
 
-func (s *Server) Stop() error {
+func (s *Redirect) Stop() error {
 	return s.server.Shutdown()
 }
