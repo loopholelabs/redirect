@@ -17,14 +17,20 @@
 package redirect
 
 import (
+	"errors"
 	"github.com/rs/zerolog"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 	"time"
 )
 
+var (
+	ErrDisabled = errors.New("redirect is disabled")
+)
+
 type Options struct {
 	LogName       string
+	Disabled      bool
 	ListenAddress string
 }
 
@@ -34,8 +40,14 @@ type Redirect struct {
 	options *Options
 }
 
-func New(options *Options, logger *zerolog.Logger) *Redirect {
+func New(options *Options, logger *zerolog.Logger) (*Redirect, error) {
 	l := logger.With().Str(options.LogName, "REDIRECT").Logger()
+
+	if options.Disabled {
+		l.Warn().Msg("disabled")
+		return nil, ErrDisabled
+	}
+
 	return &Redirect{
 		server: &fasthttp.Server{
 			Handler: func(ctx *fasthttp.RequestCtx) {
@@ -52,7 +64,7 @@ func New(options *Options, logger *zerolog.Logger) *Redirect {
 		},
 		logger:  &l,
 		options: options,
-	}
+	}, nil
 }
 
 func (s *Redirect) Start() error {

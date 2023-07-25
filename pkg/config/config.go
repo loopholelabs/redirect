@@ -19,7 +19,6 @@ package config
 import (
 	"errors"
 	"github.com/loopholelabs/redirect"
-	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -27,37 +26,39 @@ var (
 	ErrListenAddressRequired = errors.New("listen address is required")
 )
 
+const (
+	DefaultDisabled = false
+)
+
 type Config struct {
+	Disabled      bool   `yaml:"disabled"`
 	ListenAddress string `yaml:"listen_address"`
 }
 
 func New() *Config {
-	return &Config{}
+	return &Config{
+		Disabled: DefaultDisabled,
+	}
 }
 
 func (c *Config) Validate() error {
-	if c.ListenAddress == "" {
-		return ErrListenAddressRequired
+	if !c.Disabled {
+		if c.ListenAddress == "" {
+			return ErrListenAddressRequired
+		}
 	}
 	return nil
 }
 
 func (c *Config) RootPersistentFlags(flags *pflag.FlagSet) {
+	flags.BoolVar(&c.Disabled, "redirect-disabled", false, "Disable the redirect service")
 	flags.StringVar(&c.ListenAddress, "redirect-listen-address", "", "The listen address for the redirect service")
-}
-
-func (c *Config) GlobalRequiredFlags(cmd *cobra.Command) error {
-	err := cmd.MarkFlagRequired("redirect-listen-address")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *Config) GenerateOptions(logName string) *redirect.Options {
 	return &redirect.Options{
 		LogName:       logName,
+		Disabled:      c.Disabled,
 		ListenAddress: c.ListenAddress,
 	}
 }
